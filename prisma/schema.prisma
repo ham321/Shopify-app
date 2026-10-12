@@ -1,0 +1,199 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:dev.sqlite"
+}
+
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+model RegistrySettings {
+  shop                 String   @id
+  enabled              Boolean  @default(true)
+  accentColor          String   @default("#7c3aed")
+  eventTypes           String   @default("Wedding,Baby shower,Birthday,Housewarming,Anniversary,Graduation,Holiday,Other")
+  defaultVisibility    String   @default("PUBLIC")
+  maxItemsPerRegistry  Int      @default(100)
+  maxRegistriesPerUser Int      @default(3)
+  allowGiftMessages    Boolean  @default(true)
+  showPurchasedCounts  Boolean  @default(true)
+  welcomeHeading       String   @default("Gift registry")
+  welcomeText          String   @default("Create a registry for your big day, or find a friend's registry and give them something they truly want.")
+
+  // ---- Look & feel (store-wide defaults; each registry can override when allowCustomization is on)
+  secondaryColor       String   @default("#1f2937")
+  backgroundColor      String   @default("#ffffff")
+  surfaceColor         String   @default("#ffffff")
+  textColor            String   @default("#1f2328")
+  fontStyle            String   @default("THEME") // THEME | MODERN | CLASSIC | ELEGANT | FRIENDLY
+  cornerStyle          String   @default("SOFT") // SHARP | SOFT | ROUND
+  heroStyle            String   @default("GRADIENT") // GRADIENT | SOLID
+  defaultLayout        String   @default("GRID") // GRID | LIST
+  customCss            String   @default("")
+
+  // ---- Feature switches
+  allowCustomization   Boolean  @default(true)
+  allowPhotos          Boolean  @default(true)
+  allowAddress         Boolean  @default(true)
+  showTracker          Boolean  @default(true)
+  showGifterWall       Boolean  @default(true)
+  analyticsEnabled     Boolean  @default(true)
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model Registry {
+  id           String         @id @default(cuid())
+  shop         String
+  slug         String
+  customerId   String
+  ownerName    String
+  title        String
+  eventType    String         @default("Other")
+  eventDate    DateTime?
+  message      String?
+  visibility   String         @default("PUBLIC") // PUBLIC | LINK_ONLY | PASSWORD
+  password     String?
+  surpriseMode Boolean        @default(false)
+  status       String         @default("ACTIVE") // ACTIVE | HIDDEN (hidden by merchant)
+  views        Int            @default(0)
+
+  // ---- Story & look
+  story          String?
+  palette        String         @default("STORE") // STORE | ROSE | SAGE | OCEAN | MIDNIGHT | SUNSET | LAVENDER | GOLD | MONO | CUSTOM
+  colorAccent    String?
+  colorSecondary String?
+  colorBackground String?
+  fontStyle      String?        // null = store default
+  heroStyle      String?        // null = store default
+  layout         String?        // null = store default
+  showGifterWall Boolean        @default(true)
+
+  // ---- Delivery address (guests can choose "ship straight to the registry owner")
+  shipEnabled    Boolean        @default(false)
+  shipShowFull   Boolean        @default(false)
+  shipName       String?
+  shipLine1      String?
+  shipLine2      String?
+  shipCity       String?
+  shipRegion     String?
+  shipPostal     String?
+  shipCountry    String?
+  shipPhone      String?
+  shipNote       String?
+
+  items        RegistryItem[]
+  purchases    Purchase[]
+  images       RegistryImage[]
+  events       RegistryEvent[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([shop, slug])
+  @@index([shop, customerId])
+  @@index([shop, status])
+}
+
+model RegistryItem {
+  id                String     @id @default(cuid())
+  registryId        String
+  registry          Registry   @relation(fields: [registryId], references: [id], onDelete: Cascade)
+  productId         String
+  variantId         String
+  title             String
+  variantTitle      String?
+  handle            String
+  imageUrl          String?
+  price             Float
+  currency          String     @default("USD")
+  quantityWanted    Int        @default(1)
+  quantityPurchased Int        @default(0)
+  priority          String     @default("NORMAL") // MUST_HAVE | NORMAL | NICE
+  note              String?
+  position          Int        @default(0)
+  purchases         Purchase[]
+  createdAt         DateTime   @default(now())
+
+  @@unique([registryId, variantId])
+}
+
+model Purchase {
+  id          String        @id @default(cuid())
+  shop        String
+  registryId  String
+  registry    Registry      @relation(fields: [registryId], references: [id], onDelete: Cascade)
+  itemId      String?
+  item        RegistryItem? @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  itemTitle   String
+  orderId     String
+  orderName   String?
+  lineItemId  String
+  quantity    Int
+  amount      Float         @default(0)
+  currency    String        @default("USD")
+  gifterName  String?
+  giftMessage String?
+  thanked     Boolean       @default(false)
+  thankYouNote String?
+  shippedToRegistry Boolean @default(false)
+  anonymous   Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+
+  @@unique([shop, orderId, lineItemId])
+  @@index([registryId])
+  @@index([shop])
+}
+
+model RegistryImage {
+  id         String   @id @default(cuid())
+  shop       String
+  registryId String
+  registry   Registry @relation(fields: [registryId], references: [id], onDelete: Cascade)
+  kind       String // COVER | PROFILE | GALLERY
+  mime       String
+  size       Int
+  bytes      Bytes
+  caption    String?
+  position   Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([registryId, kind])
+  @@index([shop])
+}
+
+model RegistryEvent {
+  id         String    @id @default(cuid())
+  shop       String
+  registryId String
+  registry   Registry  @relation(fields: [registryId], references: [id], onDelete: Cascade)
+  itemId     String?
+  type       String // VIEW | GIFT_CLICK | SHARE
+  channel    String?
+  visitor    String?
+  createdAt  DateTime  @default(now())
+
+  @@index([shop, createdAt])
+  @@index([registryId, createdAt])
+  @@index([shop, type, createdAt])
+}

@@ -1,0 +1,171 @@
+{%- comment -%}
+  App block: "Add to gift registry" button for product pages.
+  Theme editor -> Product template -> Add block -> Apps -> Add to gift registry.
+  Shoppers pick a registry in a popup and the item is added without leaving the page.
+{%- endcomment -%}
+{%- liquid
+  assign bid = block.id
+  assign s = block.settings
+  assign pad = '12px 22px'
+  assign fs = '15px'
+  if s.size == 'small'
+    assign pad = '8px 16px'
+    assign fs = '13px'
+  elsif s.size == 'large'
+    assign pad = '16px 30px'
+    assign fs = '17px'
+  endif
+  assign cur_variant = product.selected_or_first_available_variant
+-%}
+
+<style>
+  #grb-{{ bid }}{margin:{{ s.margin_top }}px 0 {{ s.margin_bottom }}px;text-align:{{ s.align }};font-family:inherit}
+  #grb-{{ bid }} .grb-btn{display:{% if s.full_width %}flex{% else %}inline-flex{% endif %};{% if s.full_width %}width:100%;{% endif %}align-items:center;justify-content:center;gap:9px;cursor:pointer;font:inherit;font-size:{{ fs }};font-weight:700;line-height:1.2;padding:{{ pad }};border-radius:{{ s.radius }}px;text-decoration:none;transition:transform .12s,box-shadow .12s,filter .12s;
+    {%- if s.style == 'outline' -%}background:transparent;color:{{ s.bg }};border:2px solid {{ s.bg }};
+    {%- elsif s.style == 'soft' -%}background:color-mix(in srgb,{{ s.bg }} 14%,#fff);color:{{ s.bg }};border:1px solid color-mix(in srgb,{{ s.bg }} 40%,#fff);
+    {%- else -%}background:{{ s.bg }};color:{{ s.text }};border:2px solid {{ s.bg }};{%- endif -%}}
+  #grb-{{ bid }} .grb-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.15);filter:brightness(.95)}
+  #grb-{{ bid }} .grb-btn svg{width:1.15em;height:1.15em;flex:none}
+  #grb-{{ bid }} dialog{border:0;border-radius:18px;padding:0;width:min(440px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;color:#1f2328;background:#fff;box-shadow:0 24px 70px rgba(0,0,0,.35);text-align:left}
+  #grb-{{ bid }} dialog::backdrop{background:rgba(17,24,39,.55)}
+  #grb-{{ bid }} .grb-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:{{ s.bg }};color:{{ s.text }}}
+  #grb-{{ bid }} .grb-head h2{margin:0;font-size:18px;color:inherit}
+  #grb-{{ bid }} .grb-x{background:none;border:0;color:inherit;font-size:28px;line-height:1;cursor:pointer;padding:0 4px}
+  #grb-{{ bid }} .grb-body{padding:18px 20px 22px}
+  #grb-{{ bid }} .grb-prod{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+  #grb-{{ bid }} .grb-prod img{width:60px;height:60px;object-fit:cover;border-radius:12px}
+  #grb-{{ bid }} .grb-prod small{display:block;color:#6b7280}
+  #grb-{{ bid }} label{display:block;font-size:13px;font-weight:600;margin:0 0 10px}
+  #grb-{{ bid }} .grb-in{display:block;width:100%;margin-top:4px;padding:9px 10px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;background:#fff;color:#1f2328}
+  #grb-{{ bid }} .grb-row{display:flex;gap:10px}#grb-{{ bid }} .grb-row>*{flex:1}
+  #grb-{{ bid }} .grb-go{display:block;width:100%;text-align:center;border:0;border-radius:10px;padding:12px;background:{{ s.bg }};color:{{ s.text }};font:inherit;font-weight:700;cursor:pointer;text-decoration:none}
+  #grb-{{ bid }} .grb-go.alt{background:#fff;color:#1f2328;border:1px solid #cbd5e1;margin-top:8px}
+  #grb-{{ bid }} .grb-msg{padding:10px 12px;border-radius:10px;margin-bottom:12px;font-weight:600;font-size:14px}
+  #grb-{{ bid }} .grb-msg.err{background:#fee2e2;color:#7f1d1d}
+  #grb-{{ bid }} .grb-ok{text-align:center;padding:10px 0}
+  #grb-{{ bid }} .grb-ok .tick{width:56px;height:56px;border-radius:50%;background:#22c55e;color:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:30px}
+  #grb-{{ bid }} [hidden]{display:none!important}
+</style>
+
+<div id="grb-{{ bid }}" data-handle="{{ product.handle }}" data-variant="{{ cur_variant.id }}" data-login="{% if customer %}1{% else %}0{% endif %}" {{ block.shopify_attributes }}>
+  <button type="button" class="grb-btn" data-open aria-haspopup="dialog">
+    {%- if s.icon == 'heart' -%}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+    {%- elsif s.icon == 'gift' -%}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg>{%- endif -%}
+    <span>{{ s.label | escape }}</span>
+  </button>
+
+  <dialog aria-label="{{ s.label | escape }}">
+    <div class="grb-head"><h2>{{ s.modal_heading | escape }}</h2><button type="button" class="grb-x" data-close aria-label="Close">&times;</button></div>
+    <div class="grb-body">
+      <div class="grb-prod">
+        {%- if product.featured_image -%}<img src="{{ product.featured_image | image_url: width: 140 }}" alt="" loading="lazy">{%- endif -%}
+        <div><b>{{ product.title | escape }}</b><small data-variant-name></small></div>
+      </div>
+
+      {%- unless customer -%}
+        <p style="margin:0 0 12px;color:#4b5563">Log in to add this to your registry.</p>
+        <a class="grb-go" href="/account/login?return_url={{ request.path | url_encode }}">Log in</a>
+      {%- else -%}
+        <p data-loading style="color:#6b7280">Loading your registries&hellip;</p>
+        <div data-none hidden>
+          <p style="margin:0 0 12px;color:#4b5563">You don't have a registry yet. Create one, then come back to add this.</p>
+          <a class="grb-go" href="/apps/registry/manage">Create a registry</a>
+        </div>
+        <form data-form hidden>
+          <div class="grb-msg err" data-err hidden></div>
+          <label>Registry<select class="grb-in" name="registryId" data-registries required></select></label>
+          <div class="grb-row">
+            <label>How many<input class="grb-in" type="number" name="qty" value="1" min="1" max="99"></label>
+            <label>Priority<select class="grb-in" name="priority"><option value="MUST_HAVE">Must have</option><option value="NORMAL" selected>Would love</option><option value="NICE">Nice to have</option></select></label>
+          </div>
+          <label>Note for guests (optional)<input class="grb-in" name="note" maxlength="200" placeholder="e.g. We'd love the grey one"></label>
+          <button class="grb-go" type="submit">{{ s.confirm_label | escape }}</button>
+        </form>
+        <div class="grb-ok" data-done hidden>
+          <div class="tick">&#10003;</div><b style="font-size:18px">Added to your registry!</b>
+          <p style="color:#6b7280;margin:6px 0 16px" data-done-title></p>
+          <a class="grb-go" data-view href="/apps/registry/manage">View my registry</a>
+          <button type="button" class="grb-go alt" data-close>Keep shopping</button>
+        </div>
+      {%- endunless -%}
+    </div>
+  </dialog>
+</div>
+
+<script>
+(function(){
+  var root=document.getElementById('grb-{{ bid }}'); if(!root) return;
+  var dlg=root.querySelector('dialog'), form=root.querySelector('[data-form]'), loaded=false;
+  var VAR={ {%- for v in product.variants -%}"{{ v.id }}":{{ v.title | json }}{%- unless forloop.last -%},{%- endunless -%}{%- endfor -%} };
+  function variantId(){
+    var q=new URL(location.href).searchParams.get('variant'); if(q) return q;
+    var f=document.querySelector('form[action*="/cart/add"] [name="id"]'); if(f&&f.value) return f.value;
+    return root.getAttribute('data-variant');
+  }
+  function show(name){ ['loading','none','form','done'].forEach(function(n){var e=root.querySelector('[data-'+n+']'); if(e) e.hidden=(n!==name);}); }
+  function open(){
+    var id=variantId(), nm=VAR[id]; var label=root.querySelector('[data-variant-name]');
+    if(label) label.textContent=(nm&&nm!=='Default Title')?'Option: '+nm:'';
+    if(typeof dlg.showModal==='function') dlg.showModal(); else dlg.setAttribute('open','');
+    if(root.getAttribute('data-login')==='1') load();
+  }
+  function close(){ if(typeof dlg.close==='function') dlg.close(); else dlg.removeAttribute('open'); }
+  root.querySelector('[data-open]').addEventListener('click',open);
+  root.addEventListener('click',function(e){ if(e.target.closest&&e.target.closest('[data-close]')) close(); });
+  dlg.addEventListener('click',function(e){ if(e.target===dlg) close(); });
+
+  function load(){
+    if(loaded){ show(form&&!form.hidden?'form':'form'); return; }
+    show('loading');
+    fetch('/apps/registry/drawer',{credentials:'same-origin',headers:{Accept:'application/json'}}).then(function(r){return r.json();}).then(function(d){
+      loaded=true; var regs=d.registries||[], sel=root.querySelector('[data-registries]');
+      if(!d.enabled||!regs.length){ show('none'); return; }
+      regs.forEach(function(r){ var o=document.createElement('option'); o.value=r.id; o.textContent=r.title; o.setAttribute('data-slug',r.slug); sel.appendChild(o); });
+      show('form');
+    }).catch(function(){ var l=root.querySelector('[data-loading]'); if(l) l.textContent='Could not load your registries. Please try again.'; loaded=false; });
+  }
+
+  if(form) form.addEventListener('submit',function(e){
+    e.preventDefault();
+    var b=new URLSearchParams(new FormData(form)); b.set('variantId','gid://shopify/ProductVariant/'+variantId());
+    var btn=form.querySelector('button[type=submit]'), err=root.querySelector('[data-err]'); btn.disabled=true; err.hidden=true;
+    fetch('/apps/registry/add',{method:'POST',body:b,credentials:'same-origin',headers:{Accept:'application/json'}})
+      .then(function(r){return r.json();})
+      .then(function(j){
+        btn.disabled=false;
+        if(j&&j.ok){ root.querySelector('[data-done-title]').textContent='in '+j.registryTitle; root.querySelector('[data-view]').href=j.manageUrl; show('done'); }
+        else if(j&&j.login){ location.href='/account/login?return_url='+encodeURIComponent(location.pathname); }
+        else { err.textContent=(j&&j.error)||'Something went wrong.'; err.hidden=false; }
+      }).catch(function(){ btn.disabled=false; err.textContent='Something went wrong. Please try again.'; err.hidden=false; });
+  });
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Add to gift registry",
+  "target": "section",
+  "templates": ["product"],
+  "settings": [
+    { "type": "header", "content": "Button" },
+    { "type": "text", "id": "label", "label": "Button text", "default": "Add to gift registry" },
+    { "type": "select", "id": "style", "label": "Style", "default": "solid",
+      "options": [ { "value": "solid", "label": "Solid" }, { "value": "outline", "label": "Outline" }, { "value": "soft", "label": "Soft tint" } ] },
+    { "type": "color", "id": "bg", "label": "Button colour", "default": "#7c3aed" },
+    { "type": "color", "id": "text", "label": "Text colour (solid style)", "default": "#ffffff" },
+    { "type": "select", "id": "icon", "label": "Icon", "default": "heart",
+      "options": [ { "value": "heart", "label": "Heart" }, { "value": "gift", "label": "Gift" }, { "value": "none", "label": "None" } ] },
+    { "type": "select", "id": "size", "label": "Size", "default": "medium",
+      "options": [ { "value": "small", "label": "Small" }, { "value": "medium", "label": "Medium" }, { "value": "large", "label": "Large" } ] },
+    { "type": "range", "id": "radius", "label": "Corner radius", "min": 0, "max": 40, "step": 1, "unit": "px", "default": 10 },
+    { "type": "checkbox", "id": "full_width", "label": "Full width", "default": true },
+    { "type": "select", "id": "align", "label": "Alignment", "default": "left",
+      "options": [ { "value": "left", "label": "Left" }, { "value": "center", "label": "Center" }, { "value": "right", "label": "Right" } ] },
+    { "type": "range", "id": "margin_top", "label": "Space above", "min": 0, "max": 60, "step": 2, "unit": "px", "default": 12 },
+    { "type": "range", "id": "margin_bottom", "label": "Space below", "min": 0, "max": 60, "step": 2, "unit": "px", "default": 12 },
+    { "type": "header", "content": "Popup" },
+    { "type": "text", "id": "modal_heading", "label": "Popup heading", "default": "Add to my registry" },
+    { "type": "text", "id": "confirm_label", "label": "Confirm button text", "default": "Add to registry" }
+  ]
+}
+{% endschema %}

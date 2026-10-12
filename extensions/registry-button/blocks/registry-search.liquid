@@ -1,0 +1,31 @@
+<div class="gr-find" style="max-width:{{ block.settings.width }}px;margin:{{ block.settings.margin }}px auto;padding:0 16px;text-align:center;" {{ block.shopify_attributes }}>
+  {% if block.settings.heading != blank %}<h2 style="margin:0 0 6px">{{ block.settings.heading }}</h2>{% endif %}
+  {% if block.settings.text != blank %}<p style="margin:0 0 14px;opacity:.75">{{ block.settings.text }}</p>{% endif %}
+  <form action="/apps/registry" method="get" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+    <input type="search" name="q" required placeholder="{{ block.settings.placeholder }}" aria-label="{{ block.settings.placeholder }}"
+      style="flex:1 1 220px;min-width:0;padding:12px 14px;border:1px solid #d1d5db;border-radius:{{ block.settings.radius }}px;font:inherit;">
+    <button type="submit"
+      style="padding:12px 20px;border:0;border-radius:{{ block.settings.radius }}px;background:{{ block.settings.bg }};color:{{ block.settings.text_color }};font:inherit;font-weight:600;cursor:pointer;">
+      {{ block.settings.button }}
+    </button>
+  </form>
+  <p style="margin:12px 0 0"><a href="/apps/registry/manage" style="color:inherit">Create or manage my registry</a></p>
+</div>
+
+{% schema %}
+{
+  "name": "Find a registry",
+  "target": "section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Find a gift registry" },
+    { "type": "text", "id": "text", "label": "Text", "default": "Search by the name of the couple or host, or by event." },
+    { "type": "text", "id": "placeholder", "label": "Search placeholder", "default": "Search registries" },
+    { "type": "text", "id": "button", "label": "Button text", "default": "Search" },
+    { "type": "color", "id": "bg", "label": "Button color", "default": "#7c3aed" },
+    { "type": "color", "id": "text_color", "label": "Button text color", "default": "#ffffff" },
+    { "type": "range", "id": "radius", "label": "Corner radius", "min": 0, "max": 30, "step": 1, "unit": "px", "default": 8 },
+    { "type": "range", "id": "width", "label": "Max width", "min": 320, "max": 900, "step": 20, "unit": "px", "default": 560 },
+    { "type": "range", "id": "margin", "label": "Vertical spacing", "min": 0, "max": 80, "step": 4, "unit": "px", "default": 32 }
+  ]
+}
+{% endschema %}

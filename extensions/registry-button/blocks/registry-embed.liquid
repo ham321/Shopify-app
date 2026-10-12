@@ -1,0 +1,171 @@
+{%- comment -%}
+  App embed: Gift registry sidebar. One switch in Theme settings > App embeds.
+  A tab opens a slide-out drawer with: add-this-product (on product pages), find a registry, and the shopper's own registries.
+{%- endcomment -%}
+{%- assign is_product = false -%}
+{%- if template.name == 'product' and product -%}{%- assign is_product = true -%}{%- endif -%}
+{%- assign side = 'right' -%}
+{%- if block.settings.position contains 'left' -%}{%- assign side = 'left' -%}{%- endif -%}
+
+<style>
+  #grd-root{--grd-accent:{{ block.settings.accent }};--grd-text:{{ block.settings.text_color }};--grd-w:{{ block.settings.width }}px;font-family:inherit}
+  #grd-root *{box-sizing:border-box}
+  #grd-tab{position:fixed;{{ side }}:0;{% if block.settings.position contains 'bottom' %}bottom:96px;{% else %}top:50%;transform:translateY(-50%);{% endif %}z-index:999;display:flex;align-items:center;gap:8px;border:0;cursor:pointer;background:var(--grd-accent);color:var(--grd-text);padding:12px 14px;font-weight:600;font-size:14px;line-height:1.1;font-family:inherit;box-shadow:0 4px 16px rgba(0,0,0,.25);{% if side == 'right' %}border-radius:12px 0 0 12px;{% else %}border-radius:0 12px 12px 0;{% endif %}}
+  #grd-tab:hover{filter:brightness(.93)}
+  #grd-tab .grd-lbl{writing-mode:vertical-rl;{% if side == 'right' %}transform:rotate(180deg);{% endif %}letter-spacing:.04em}
+  #grd-tab .grd-ic{font-size:18px;line-height:1}
+  {% if block.settings.launcher == 'bubble' %}#grd-tab{ {{ side }}:20px;border-radius:999px;padding:14px 18px;{% if block.settings.position contains 'bottom' %}bottom:24px;{% endif %} }#grd-tab .grd-lbl{writing-mode:horizontal-tb;transform:none}{% endif %}
+  #grd-overlay{position:fixed;inset:0;background:rgba(17,24,39,.5);opacity:0;pointer-events:none;transition:opacity .25s;z-index:1000}
+  #grd-panel{position:fixed;top:0;bottom:0;{{ side }}:0;width:min(var(--grd-w),100vw);background:#fff;color:#1f2328;z-index:1001;transform:translateX({% if side == 'right' %}100%{% else %}-100%{% endif %});transition:transform .3s ease;display:flex;flex-direction:column;box-shadow:0 0 40px rgba(0,0,0,.25);visibility:hidden}
+  #grd-root.open #grd-overlay{opacity:1;pointer-events:auto}
+  #grd-root.open #grd-panel{transform:none;visibility:visible}
+  .grd-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e5e7eb;background:var(--grd-accent);color:var(--grd-text)}
+  .grd-head h2{margin:0;font-size:18px;color:inherit}
+  .grd-x{background:none;border:0;color:inherit;font-size:26px;line-height:1;cursor:pointer;padding:4px 8px}
+  .grd-body{flex:1;overflow:auto;padding:18px 20px 28px}
+  .grd-sec{border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:16px}
+  .grd-sec h3{margin:0 0 10px;font-size:15px}
+  .grd-lab{display:block;font-size:13px;font-weight:600;margin:0 0 10px}
+  .grd-in{display:block;width:100%;margin-top:4px;padding:9px 10px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;background:#fff;color:#1f2328}
+  .grd-btn{display:inline-block;width:100%;border:0;border-radius:10px;padding:11px 14px;background:var(--grd-accent);color:var(--grd-text);font-weight:600;font-size:15px;line-height:1.2;font-family:inherit;text-align:center;text-decoration:none;cursor:pointer}
+  .grd-btn:hover{filter:brightness(.93)}
+  .grd-btn.alt{background:#fff;color:#1f2328;border:1px solid #cbd5e1}
+  .grd-row{display:flex;gap:8px}.grd-row>*{flex:1}
+  .grd-prod{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+  .grd-prod img{width:56px;height:56px;object-fit:cover;border-radius:10px}
+  .grd-prog{height:8px;background:#eceef1;border-radius:999px;overflow:hidden;margin:8px 0 4px}
+  .grd-prog span{display:block;height:100%;background:var(--grd-accent);border-radius:999px}
+  .grd-mute{font-size:13px;color:#6b7280}
+  .grd-reg{padding:12px 0;border-top:1px solid #eef0f2}.grd-reg:first-child{border-top:0;padding-top:0}
+  .grd-reg b{display:block;font-size:15px}
+  @media (prefers-reduced-motion:reduce){#grd-panel,#grd-overlay{transition:none}}
+</style>
+
+<div id="grd-root">
+  <button id="grd-tab" type="button" aria-haspopup="dialog" aria-controls="grd-panel" aria-expanded="false">
+    <span class="grd-ic" aria-hidden="true">&#127873;</span><span class="grd-lbl">{{ block.settings.label | escape }}</span>
+  </button>
+  <div id="grd-overlay" data-grd-close></div>
+  <aside id="grd-panel" role="dialog" aria-modal="true" aria-label="{{ block.settings.label | escape }}" tabindex="-1">
+    <div class="grd-head"><h2>&#127873; {{ block.settings.heading | escape }}</h2><button class="grd-x" type="button" aria-label="Close" data-grd-close>&times;</button></div>
+    <div class="grd-body">
+
+      {%- if is_product -%}
+      <section class="grd-sec">
+        <h3>Add this to a registry</h3>
+        <div class="grd-prod">
+          {%- if product.featured_image -%}<img src="{{ product.featured_image | image_url: width: 120 }}" alt="" loading="lazy">{%- endif -%}
+          <div><b>{{ product.title | escape }}</b></div>
+        </div>
+        {%- if customer -%}
+        <form method="post" action="/apps/registry/add" id="grd-add" hidden>
+          <label class="grd-lab">Registry<select class="grd-in" name="registryId" id="grd-reg-select" required></select></label>
+          {%- if product.variants.size > 1 -%}
+          <label class="grd-lab">Option<select class="grd-in" name="variantId">
+            {%- for v in product.variants -%}<option value="gid://shopify/ProductVariant/{{ v.id }}"{% if v.id == product.selected_or_first_available_variant.id %} selected{% endif %}>{{ v.title | escape }} - {{ v.price | money }}</option>{%- endfor -%}
+          </select></label>
+          {%- else -%}<input type="hidden" name="variantId" value="gid://shopify/ProductVariant/{{ product.selected_or_first_available_variant.id }}">{%- endif -%}
+          <div class="grd-row">
+            <label class="grd-lab">How many<input class="grd-in" type="number" name="qty" value="1" min="1" max="99"></label>
+            <label class="grd-lab">Priority<select class="grd-in" name="priority"><option value="MUST_HAVE">Must have</option><option value="NORMAL" selected>Would love</option><option value="NICE">Nice to have</option></select></label>
+          </div>
+          <label class="grd-lab">Note for guests (optional)<input class="grd-in" name="note" maxlength="200"></label>
+          <button class="grd-btn" type="submit">Add to registry</button>
+        </form>
+        <div id="grd-add-none" class="grd-mute" hidden>You don't have a registry yet. Create one below, then come back to add this.</div>
+        {%- else -%}
+        <p class="grd-mute" style="margin-top:0">Log in to add this to your registry.</p>
+        <a class="grd-btn" href="/account/login?return_url={{ request.path | url_encode }}">Log in</a>
+        {%- endif -%}
+      </section>
+      {%- endif -%}
+
+      <section class="grd-sec">
+        <h3>Find a registry</h3>
+        <form action="/apps/registry" method="get">
+          <input class="grd-in" type="search" name="q" required placeholder="Search by name or event" aria-label="Search registries" style="margin:0 0 10px">
+          <button class="grd-btn" type="submit">Search</button>
+        </form>
+      </section>
+
+      <section class="grd-sec">
+        <h3>My registries</h3>
+        {%- if customer -%}
+          <div id="grd-mine" class="grd-mute">Loading&hellip;</div>
+          <div style="margin-top:12px"><a class="grd-btn alt" href="/apps/registry/manage">Create or manage my registries</a></div>
+        {%- else -%}
+          <p class="grd-mute" style="margin-top:0">Log in to create a registry, track gifts and edit your details.</p>
+          <a class="grd-btn" href="/account/login?return_url={{ '/apps/registry/manage' | url_encode }}">Log in</a>
+        {%- endif -%}
+      </section>
+    </div>
+  </aside>
+</div>
+
+<script>
+(function(){
+  var root=document.getElementById('grd-root'); if(!root) return;
+  var tab=document.getElementById('grd-tab'), panel=document.getElementById('grd-panel'), loaded=false, lastFocus=null;
+  function open(){ lastFocus=document.activeElement; root.classList.add('open'); tab.setAttribute('aria-expanded','true'); setTimeout(function(){panel.focus();},50); load(); }
+  function close(){ root.classList.remove('open'); tab.setAttribute('aria-expanded','false'); if(lastFocus&&lastFocus.focus) lastFocus.focus(); }
+  tab.addEventListener('click',open);
+  root.querySelectorAll('[data-grd-close]').forEach(function(el){el.addEventListener('click',close);});
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&root.classList.contains('open')) close(); });
+  if(location.hash==='#registry') open();
+
+  function el(tag,cls,text){var n=document.createElement(tag); if(cls)n.className=cls; if(text!=null)n.textContent=text; return n;}
+  function load(){
+    if(loaded) return;
+    var mine=document.getElementById('grd-mine'), sel=document.getElementById('grd-reg-select');
+    if(!mine&&!sel){loaded=true;return;}
+    fetch('/apps/registry/drawer',{credentials:'same-origin',headers:{Accept:'application/json'}})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        loaded=true;
+        var regs=d.registries||[];
+        if(mine){
+          mine.textContent='';
+          if(!d.enabled){mine.textContent='Registries are closed right now.';}
+          else if(!regs.length){mine.textContent="You don't have a registry yet.";}
+          regs.forEach(function(r){
+            var box=el('div','grd-reg'); box.appendChild(el('b',null,r.title));
+            box.appendChild(el('div','grd-mute',r.eventType+' · '+(r.wanted?(r.got+' of '+r.wanted+' bought'):'no items yet')));
+            var bar=el('div','grd-prog'), fill=el('span'); fill.style.width=(r.wanted?Math.round(r.got/r.wanted*100):0)+'%'; bar.appendChild(fill); box.appendChild(bar);
+            var row=el('div','grd-row'), a=el('a','grd-btn alt','Tracker'), b=el('a','grd-btn alt','View');
+            a.href='/apps/registry/manage/'+encodeURIComponent(r.id)+'#tracker'; b.href='/apps/registry/r/'+encodeURIComponent(r.slug);
+            row.appendChild(a); row.appendChild(b); box.appendChild(row); mine.appendChild(box);
+          });
+        }
+        var form=document.getElementById('grd-add'), none=document.getElementById('grd-add-none');
+        if(sel&&form){
+          if(regs.length){ regs.forEach(function(r){var o=document.createElement('option'); o.value=r.id; o.textContent=r.title; sel.appendChild(o);}); form.hidden=false; }
+          else if(none){ none.hidden=false; }
+        }
+      })
+      .catch(function(){ var m=document.getElementById('grd-mine'); if(m) m.textContent='Could not load your registries. Please try again.'; });
+  }
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Gift registry sidebar",
+  "target": "body",
+  "settings": [
+    { "type": "text", "id": "label", "label": "Tab text", "default": "Gift registry" },
+    { "type": "text", "id": "heading", "label": "Sidebar heading", "default": "Gift registry" },
+    { "type": "select", "id": "position", "label": "Tab position", "default": "right-middle",
+      "options": [
+        { "value": "right-middle", "label": "Right, middle" },
+        { "value": "right-bottom", "label": "Right, bottom" },
+        { "value": "left-middle", "label": "Left, middle" },
+        { "value": "left-bottom", "label": "Left, bottom" }
+      ] },
+    { "type": "select", "id": "launcher", "label": "Launcher style", "default": "tab",
+      "options": [ { "value": "tab", "label": "Side tab" }, { "value": "bubble", "label": "Round floating button" } ] },
+    { "type": "range", "id": "width", "label": "Sidebar width", "min": 320, "max": 520, "step": 20, "unit": "px", "default": 400 },
+    { "type": "color", "id": "accent", "label": "Accent color", "default": "#7c3aed" },
+    { "type": "color", "id": "text_color", "label": "Text on accent", "default": "#ffffff" }
+  ]
+}
+{% endschema %}
